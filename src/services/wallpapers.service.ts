@@ -118,22 +118,27 @@ export async function incrementDownloadCount(id: string): Promise<void> {
 // ---- Admin operations ----
 
 export async function createWallpaper(input: WallpaperInput): Promise<Wallpaper> {
-  const now = new Date().toISOString();
-  const payload: Wallpaper = {
-    ...input,
-    id: generateId("wp"),
-    slug: input.slug || slugify(input.title),
-    downloads: 0,
-    created_at: now,
-    updated_at: now,
-  };
+  const slug = input.slug || slugify(input.title);
 
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.from("wallpapers").insert(payload).select().single();
+    const { data, error } = await supabase
+      .from("wallpapers")
+      .insert({ ...input, slug })
+      .select()
+      .single();
     if (error) throw error;
     return data as Wallpaper;
   }
 
+  const now = new Date().toISOString();
+  const payload: Wallpaper = {
+    ...input,
+    id: generateId("wp"),
+    slug,
+    downloads: 0,
+    created_at: now,
+    updated_at: now,
+  };
   localStore.wallpapers.unshift(payload);
   return simulateLatency(payload, 300);
 }
